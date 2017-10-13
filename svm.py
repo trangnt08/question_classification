@@ -104,6 +104,13 @@ def load_data(filename):
         # print train
     return train
 
+def get_tfidf_scores(vectorizer, tfidf_result):
+    # http://stackoverflow.com/questions/16078015/
+    scores = zip(vectorizer.get_feature_names(),
+                 np.asarray(tfidf_result.sum(axis=0)).ravel())
+    sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+    for item in sorted_scores:
+        print('%s : %f' % (item[0], item[1]))
 
 if __name__ == "__main__":
 
@@ -155,13 +162,14 @@ if __name__ == "__main__":
     # iterate over classifiers
     results = {}
     kq = {}
-    clf = SVC(kernel='rbf', C=1000)
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
-    print y_pred
-
-    print " accuracy: %0.3f" % accuracy_score(y_test,y_pred)
-    print " %s - Converting completed %s" % (datetime.datetime.now(), time_diff_str(t0, time.time()))
+    # clf = SVC(kernel='rbf', C=1000)
+    # clf.fit(X_train, y_train)
+    # y_pred = clf.predict(X_test)
+    # print y_pred
+    #
+    # print " accuracy: %0.3f" % accuracy_score(y_test,y_pred)
+    # print " %s - Converting completed %s" % (datetime.datetime.now(), time_diff_str(t0, time.time()))
+    get_tfidf_scores(vectorizer,X_train)
 
     # print "-----------------------"
     # print "fine grained category"

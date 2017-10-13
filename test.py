@@ -34,6 +34,12 @@ def build_dict(arr, n):
       d.setdefault(x,p)
       # print x + ":" + str(p)
   return d
+def is_exist(word, vocab):
+    try:
+        word in vocab
+        return True
+    except:
+        return False
 
 print ngrams('a b c d', 2) # [['a', 'b'], ['b', 'c'], ['c', 'd']]
 a = [' '.join(x) for x in ngrams('a b c d', 2)] #['a b', 'b c', 'c d']
@@ -117,7 +123,9 @@ for q in arr:
 print "col4 ",col4
 
 a =['a b','c d']
-print " ".join(a)
+b = ['a b','c d','e f']
+
+print is_exist('a b',a)
 
 
 # print "Hello abc def"-"abc"
