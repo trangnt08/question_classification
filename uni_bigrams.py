@@ -1,11 +1,13 @@
 # -*- encoding: utf8 -*-
 import re
 
+from pyvi.pyvi import ViTokenizer
 from sklearn.externals import joblib
 from sklearn.metrics import accuracy_score
 import datetime
 import pandas as pd
 import time
+import os
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.svm import SVC
@@ -22,7 +24,7 @@ def time_diff_str(t1, t2):
 
 def load_model(model):
     print('loading model ...')
-    if np.os.path.isfile(model):
+    if os.path.isfile(model):
         return joblib.load(model)
     else:
         return None
@@ -67,6 +69,10 @@ def review_to_words(review, filename):
     # and return the result.
     return " ".join(meaningful_words)
 
+def list_words(mes):
+    words = mes.lower().split()
+    return " ".join(words)
+
 def review_to_words2(review, filename,n):
     with open(filename, "r") as f3:
         dict_data = f3.read()
@@ -82,6 +88,9 @@ def word_clean(array, review):
 
 def print_words_frequency(train_data_features):
     # Take a look at the words in the vocabulary
+    vectorizer = load_model('model/vectorizer.pkl')
+    if vectorizer == None:
+        vectorizer = TfidfVectorizer(ngram_range=(1, 1), max_df=0.7, min_df=2, max_features=1000)
     vocab = vectorizer.get_feature_names()
     print "Words in vocabulary:", vocab
 
@@ -186,68 +195,85 @@ def load_data(filename, dict):
         train = pd.DataFrame(d)
     return train
 
+def training1():
+    # vectorizer = load_model('model/vectorizer.pkl')
+    # print "aa"
+    # if vectorizer == None:
+    print "dbc"
+    vectorizer = TfidfVectorizer(ngram_range=(1, 1), max_df=0.7, min_df=2, max_features=1000)
+    print "ddde"
+    train = load_data('datavn/train', 'datavn/dict1')
+    print "bb"
+    # test = load_data('datavn/test', 'datavn/dict2')
+    train_text = train["question"].values
+    # test_text = test["question"].values
+    vectorizer.fit(train_text)
+    X_train = vectorizer.transform(train_text)
+    X_train = X_train.toarray()
+    y_train = train["label1"]
+    joblib.dump(vectorizer, 'model/vectorizer.pkl')
+    fit1(X_train, y_train)
 
-if __name__ == "__main__":
+def fit1(X_train,y_train):
+    uni_big = SVC(kernel='rbf', C=1000)
+    uni_big.fit(X_train, y_train)
+    joblib.dump(uni_big, 'model/uni_big.pkl')
 
-    # load_data("datavn/test")
-
-    # vectorizer = CountVectorizer(analyzer="word",
-    #                          tokenizer=None,
-    #                          preprocessor=None,
-    #                          stop_words=None,
-    #                          max_features=1000)
-    vectorizer = TfidfVectorizer(ngram_range=(1,1), max_df=0.7, min_df=2, max_features=1000)
-    train = load_data('datavn/train','datavn/dict1')
-    test = load_data('datavn/test','datavn/dict2')
-    print test
-
-    print "Data dimensions:", train.shape
-    print "List features:", train.columns.values
-    print "First review:", train["label1"][0], "|", train["question"][0]
-
-    print "Data dimensions:", test.shape
-    print "List features:", test.columns.values
-    print "First review:", test["label1"][0], "|", test["question"][0]
-    # train, test = train_test_split(train, test_size=0.2)
-
+def training2():
+    vectorizer = load_model('model/vectorizer.pkl')
+    if vectorizer == None:
+        vectorizer = TfidfVectorizer(ngram_range=(1, 1), max_df=0.7, min_df=2, max_features=1000)
+    print "a"
+    train = load_data('datavn/train', 'datavn/dict1')
+    test = load_data('datavn/test', 'datavn/dict2')
     train_text = train["question"].values
     test_text = test["question"].values
-
     vectorizer.fit(train_text)
     X_train = vectorizer.transform(train_text)
     X_train = X_train.toarray()
     y_train = train["label1"]
     y_train2 = train["label2"]
-    print X_train
 
-    X_test = vectorizer.transform(test_text)
-    X_test = X_test.toarray()
-    y_test = test["label1"]
-    y_test2 = test["label2"]
-
+def predict_ex(mes):
+    vectorizer = load_model('model/vectorizer.pkl')
+    uni_big = load_model('model/uni_big.pkl')
+    if uni_big == None:
+        training1()
+    uni_big = load_model('model/uni_big.pkl')
     print "---------------------------"
     print "Training"
     print "---------------------------"
-    names = ["RBF SVC"]
     t0 = time.time()
     # iterate over classifiers
 
-    clf = SVC(kernel='rbf', C=1000)
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
-    print y_pred
+    mes = unicode(mes, encoding='utf-8')
+    test_message = ViTokenizer.tokenize(mes).encode('utf8')
+    test_message = clean_str_vn(test_message)
+    test_message = list_words(test_message)
+    clean_test_reviews = []
+    clean_test_reviews.append(test_message)
+    d2 = {"message": clean_test_reviews}
+    test2 = pd.DataFrame(d2)
+    test_text2 = test2["message"].values.astype('str')
+    test_data_features = vectorizer.transform(test_text2)
+    test_data_features = test_data_features.toarray()
+    # print test_data_features
+    s = uni_big.predict(test_data_features)[0]
+    return s
 
-    print " accuracy: %0.3f" % accuracy_score(y_test,y_pred)
-    print " %s - Converting completed %s" % (datetime.datetime.now(), time_diff_str(t0, time.time()))
-    print "confuse matrix: \n", confusion_matrix(y_test,y_pred,labels=["ABBR", "DESC", "ENTY","HUM","LOC","NUM"])
 
-    print "-----------------------"
-    print "fine grained category"
-    print "-----------------------"
-    clf = SVC(kernel='rbf', C=1000)
-    clf.fit(X_train, y_train2)
-    y_pred = clf.predict(X_test)
-    # print y_pred
 
-    print " accuracy: %0.3f" % accuracy_score(y_test2,y_pred)
+    # print " accuracy: %0.3f" % accuracy_score(y_test,y_pred)
+    # print " %s - Converting completed %s" % (datetime.datetime.now(), time_diff_str(t0, time.time()))
+    # print "confuse matrix: \n", confusion_matrix(y_test,y_pred,labels=["ABBR", "DESC", "ENTY","HUM","LOC","NUM"])
+    #
+    # print "-----------------------"
+    # print "fine grained category"
+    # print "-----------------------"
+    # clf = SVC(kernel='rbf', C=1000)
+    # clf.fit(X_train, y_train2)
+    # y_pred = clf.predict(X_test)
+    # # print y_pred
+    #
+    # print " accuracy: %0.3f" % accuracy_score(y_test2,y_pred)
 
