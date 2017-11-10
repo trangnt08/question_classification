@@ -169,7 +169,7 @@ def load_data(filename, dict):
         for line in f:
             label1, p , label2, question = line.split(" ", 3)
             # question = clean_str_vn(question)
-            # question = review_to_words(question,'datavn/vietnamese-stopwords-dash.txt')
+            question = review_to_words(question,'datavn/vietnamese-stopwords-dash.txt')
             col1.append(label1)
             col2.append(label2)
             col3.append(question)
@@ -178,6 +178,7 @@ def load_data(filename, dict):
         dict_arr = []
         for x in ngram:
             p = ngram.get(x)
+            # Neu xuat hien < 1 lan thi ghi vao file f2 de sau nay co the bo di nhung tu it xuat hien
             if p<1:
                 dict_arr.append(x)
                 f2.write(x+"\n")
@@ -199,11 +200,8 @@ def training1():
     # vectorizer = load_model('model/vectorizer.pkl')
     # print "aa"
     # if vectorizer == None:
-    print "dbc"
     vectorizer = TfidfVectorizer(ngram_range=(1, 1), max_df=0.7, min_df=2, max_features=1000)
-    print "ddde"
     train = load_data('datavn/train', 'datavn/dict1')
-    print "bb"
     # test = load_data('datavn/test', 'datavn/dict2')
     train_text = train["question"].values
     # test_text = test["question"].values
